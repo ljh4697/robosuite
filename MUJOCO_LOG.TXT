@@ -1,0 +1,6 @@
+Tue Dec 21 12:45:54 2021
+ERROR: Fixed camera id is outside valid range
+
+Tue Dec 21 12:46:50 2021
+ERROR: Fixed camera id is outside valid range
+

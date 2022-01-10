@@ -10,6 +10,9 @@ from robosuite.environments.manipulation.wipe import Wipe
 from robosuite.environments.manipulation.two_arm_lift import TwoArmLift
 from robosuite.environments.manipulation.two_arm_peg_in_hole import TwoArmPegInHole
 from robosuite.environments.manipulation.two_arm_handover import TwoArmHandover
+from robosuite.environments.manipulation.ur5e_demo import ur5e_demo
+from robosuite.environments.manipulation.ur5e_pickandplace import ur5e_pickandplace
+
 
 from robosuite.environments import ALL_ENVIRONMENTS
 from robosuite.controllers import ALL_CONTROLLERS, load_controller_config

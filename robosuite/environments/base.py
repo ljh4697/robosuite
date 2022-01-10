@@ -386,8 +386,8 @@ class MujocoEnv(metaclass=EnvMeta):
         Raises:
             ValueError: [Steps past episode termination]
         """
-        if self.done:
-            raise ValueError("executing action in terminated episode")
+        # if self.done:
+        #     raise ValueError("executing action in terminated episode")
 
         self.timestep += 1
 
