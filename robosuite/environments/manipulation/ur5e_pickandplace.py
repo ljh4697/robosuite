@@ -13,6 +13,9 @@ from robosuite.models.tasks import ManipulationTask
 from robosuite.utils.placement_samplers import UniformRandomSampler
 from robosuite.utils.observables import Observable, sensor
 from robosuite.utils.placement_samplers import SequentialCompositeSampler, UniformRandomSampler
+from tf.transformations import quaternion_from_euler
+from math import pi
+
 
 import robosuite.utils.transform_utils as T
 from robosuite.models.objects import (
@@ -22,6 +25,7 @@ from robosuite.models.objects import (
     CanObject,
     LaptopObject,
     BottleObject,
+    HumanObject,
 )
 
 class ur5e_pickandplace(SingleArmEnv):
@@ -151,7 +155,7 @@ class ur5e_pickandplace(SingleArmEnv):
         controller_configs=None,
         gripper_types="default",
         initialization_noise="default",
-        table_full_size=(0.8, 1.2, 0.05),
+        table_full_size=(0.8, 1.3, 0.05),
         table_friction=(1., 5e-3, 1e-4),
         use_camera_obs=True,
         use_object_obs=True,
@@ -181,6 +185,7 @@ class ur5e_pickandplace(SingleArmEnv):
         self.table_full_size = table_full_size
         self.table_friction = table_friction
         self.table_offset = np.array((0, 0, 0.8))
+        self.world_offset = np.array((0, 0, 0))
 
         # reward configuration
         self.reward_scale = reward_scale
@@ -318,7 +323,7 @@ class ur5e_pickandplace(SingleArmEnv):
 
         self.objects = []
         self.obstacles = []
-    
+        self.user = []
 
         # Adjust base pose(s) accordingly
         if self.env_configuration == "bimanual":
@@ -381,15 +386,18 @@ class ur5e_pickandplace(SingleArmEnv):
         can_obj = CanObject(name="can")
         bottle_obj = BottleObject(name='bottle')
         laptop_obj = LaptopObject(name="laptop")
+        human_obj = HumanObject(name="visualhuman")
+        
         #self.objects.append(self.cube)
         self.objects.append(milk_obj)
         self.obstacles.append(laptop_obj)
+        self.user.append(human_obj)
         
         # self.objects.append(bread_obj)
         # self.objects.append(cereal_obj)
         # self.objects.append(can_obj)
         # self.objects.append(bottle_obj)
-        self.obj_names = ['milk' , "laptop"]
+        self.obj_names = ['milk' , "laptop", "visualhuman"]
         
         self.placement_initializer = SequentialCompositeSampler(name="ObjectSampler")
 
@@ -402,9 +410,9 @@ class ur5e_pickandplace(SingleArmEnv):
             sampler=UniformRandomSampler(
             name="ObjectSampler",
             mujoco_objects=self.objects,
-            x_range=[-0.25, -0.23],
-            y_range=[-0.53, -0.52],
-            ensure_object_boundary_in_range=True,
+            x_range=[-0.23, -0.23],
+            y_range=[-0.53, -0.53],
+            ensure_object_boundary_in_range=False,
             ensure_valid_placement=True,
             reference_pos=self.table_offset,
             #rotation=(np.pi + -np.pi / 3, np.pi + np.pi / 3),
@@ -416,9 +424,9 @@ class ur5e_pickandplace(SingleArmEnv):
             sampler=UniformRandomSampler(
             name="obstaclesSampler",
             mujoco_objects=self.obstacles,
-            x_range=[0.12, 0.13],
-            y_range=[0.0 , 0.01],
-            ensure_object_boundary_in_range=True,
+            x_range=[0.1, 0.1],
+            y_range=[0.0001 , 0.0001],
+            ensure_object_boundary_in_range=False,
             ensure_valid_placement=True,
             reference_pos=self.table_offset,
             #rotation=(np.pi + -np.pi / 3, np.pi + np.pi / 3),
@@ -426,11 +434,27 @@ class ur5e_pickandplace(SingleArmEnv):
             z_offset=0.00,
             )
         )
+        self.placement_initializer.append_sampler(
+            sampler=UniformRandomSampler(
+            name="userSampler",
+            mujoco_objects=self.user,
+            x_range=[0.85, 0.85],
+            y_range=[0.0001 , 0.0001],
+            rotation_axis ='free',
+            #rotation=(0, 0),
+            rotation = quaternion_from_euler(pi/2, pi, -pi/2),
+            ensure_object_boundary_in_range=False,
+            ensure_valid_placement=False,
+            reference_pos=self.world_offset,
+            #rotation=(np.pi + -np.pi / 3, np.pi + np.pi / 3),
+            z_offset=0.00000,
+            )
+        )
         # task includes arena, robot, and objects of interest
         self.model = ManipulationTask(
             mujoco_arena=mujoco_arena,
             mujoco_robots=[robot.robot_model for robot in self.robots], 
-            mujoco_objects=self.objects + self.obstacles,
+            mujoco_objects=self.objects + self.obstacles + self.user,
         )
 
     def _setup_references(self):
@@ -458,11 +482,19 @@ class ur5e_pickandplace(SingleArmEnv):
         # object-specific ids
         for obj in (self.objects):
             self.obj_body_id[obj.name] = self.sim.model.body_name2id(obj.root_body)
+            self.obj_geom_id[obj.name] = [self.sim.model.geom_name2id(g) for g in obj.contact_geoms]
+            
             #self.obj_geom_id[obj.name] = [self.sim.model.geom_name2id(g) for g in obj.contact_geoms]
         # self.pot_center_id = self.sim.model.site_name2id(self.pot.important_sites["center"])
         #self.cube_body_id = self.sim.model.body_name2id(self.cube.root_body)
         for obj in (self.obstacles):
             self.obj_body_id[obj.name] = self.sim.model.body_name2id(obj.root_body)
+            self.obj_geom_id[obj.name] = [self.sim.model.geom_name2id(g) for g in obj.contact_geoms]
+            
+        for obj in (self.user):
+            self.obj_body_id[obj.name] = self.sim.model.body_name2id(obj.root_body)
+            self.obj_geom_id[obj.name] = [self.sim.model.geom_name2id(g) for g in obj.contact_geoms]
+            
         self.table_legs_visual_id = []
         for i in range(4):
             self.table_legs_visual_id.append(self.sim.model.geom_name2id(f"table_leg{i+1}_visual"))
@@ -518,7 +550,15 @@ class ur5e_pickandplace(SingleArmEnv):
                 actives += [using_obj] * 4
                 self.object_id_to_sensors[i] = obj_sensor_names            
                 
-                
+            for i, obj in enumerate(self.user):
+                # Create object sensors
+                using_obj = (self.single_object_mode == 0 or self.object_id == i)
+                obj_sensors, obj_sensor_names = self._create_obj_sensors(obj_name=obj.name, modality=modality)
+                sensors += obj_sensors
+                names += obj_sensor_names
+                enableds += [using_obj] * 4
+                actives += [using_obj] * 4
+                self.object_id_to_sensors[i] = obj_sensor_names   
                 
 
             if self.single_object_mode == 1:

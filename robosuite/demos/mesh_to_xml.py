@@ -5,11 +5,11 @@ from lxml import etree
 
 
 
-mesh = trimesh.load('/home/joonhyeok/robosuite/robosuite/models/assets/objects/meshes/laptop_computer.obj', force='mesh')
+mesh = trimesh.load('/home/joonhyeok/robosuite/robosuite/models/assets/objects/meshes/human.obj', force='mesh')
 #convex_list = mesh.convex_decomposition(maxhulls=20, resolution=8000000, oclAcceleration=1)
 
 mesh_file = "/home/joonhyeok/robosuite/robosuite/models/assets/objects/"
-mesh_type = "laptop_computer"
+mesh_type = "human"
 
 
 mesh.apply_translation(-mesh.center_mass)

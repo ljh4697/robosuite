@@ -6,6 +6,7 @@ from copy import copy
 from robosuite.utils import RandomizationError
 from robosuite.utils.transform_utils import quat_multiply
 from robosuite.models.objects import MujocoObject
+from tf.transformations import quaternion_from_euler
 
 
 class ObjectPositionSampler:
@@ -208,6 +209,8 @@ class UniformRandomSampler(ObjectPositionSampler):
             return np.array([np.cos(rot_angle / 2), 0, np.sin(rot_angle / 2), 0])
         elif self.rotation_axis == 'z':
             return np.array([np.cos(rot_angle / 2), 0, 0, np.sin(rot_angle / 2)])
+        elif self.rotation_axis == "free":
+            return np.array(self.rotation)
         else:
             # Invalid axis specified, raise error
             raise ValueError("Invalid rotation axis specified. Must be 'x', 'y', or 'z'. Got: {}".format(self.rotation_axis))

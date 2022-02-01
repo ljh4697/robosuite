@@ -43,6 +43,7 @@ env = suite.make(
     controller_configs=config,
     has_offscreen_renderer=False,
     use_camera_obs=False,
+    render_camera=None
 )
 
 # reset the environment

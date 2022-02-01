@@ -16,7 +16,8 @@ from .xml_objects import (
     CanVisualObject,
     PlateWithHoleObject,
     DoorObject,
-    LaptopObject
+    LaptopObject,
+    HumanObject
 )
 from .primitive import *
 from .composite import *
